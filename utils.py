@@ -2,6 +2,39 @@ import matplotlib.axes as mpl_axes
 import numpy as np
 from .rectangle_fitting2 import RectangleData
 
+def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndarray):
+    """
+    Visualize the clustered points in 2D space.
+    Args:
+    - clustered_points: A nx2 numpy array of clustered points
+    - clustered_labels: A nx1 numpy array of cluster labels for each point
+    """
+    # Create a colormap instance
+    cmap = plt.get_cmap("tab20")  # Use 'tab20' for more colors
+    unique_labels = np.unique(clustered_labels)
+    colors = [cmap(i / len(unique_labels)) for i in range(len(unique_labels))]
+
+    # Visualize the 2D clusters
+    plt.figure(figsize=(10, 8))
+    
+    for label, color in zip(unique_labels, colors):
+        if label == -1:
+            # Noise points
+            color = [0, 0, 0, 1]  # Black color for noise
+        mask = (clustered_labels == label)
+        plt.scatter(clustered_points[mask, 0], clustered_points[mask, 1], color=color, label=f'Cluster {label}')
+
+    plt.title('2D DBSCAN Clustering')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))  # Move legend outside the plot
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)  # Add more columns as needed
+
+    plt.tight_layout()  # Adjust layout to prevent overlap
+    plt.figure(figsize=(12, 8))
+
+    plt.show()
+
 def plot_bev_point_cloud(ax: mpl_axes.Axes, clustered_points: np.ndarray):
     # Plot the BEV point cloud
     ax.scatter(clustered_points[:, 0], clustered_points[:, 1], s=1, c='gray', label='Point Cloud')
@@ -35,7 +68,7 @@ def filter_bboxes_by_zscore(bboxes: list[RectangleData], points: np.ndarray, fra
     
     Parameters:
     - bboxes: List of bounding boxes in the frame
-    - points: List of LiDAR points in the frame
+    - points: A nx2 numpy array of LiDAR points in the frame
     - frame_stats: Statistics calculated from the frame (mean, std dev of area, aspect ratio, density)
     - z_threshold: Z-score threshold for filtering (default is 2.0, which keeps boxes within 2 std devs)
     
@@ -66,7 +99,7 @@ def calculate_point_density(bbox: list[RectangleData], points: np.ndarray) -> fl
     
     Parameters:
     - bbox: The bounding box object (RectangleData)
-    - points: A nx3 numpy array of LiDAR points in the bbox
+    - points: A nx2 numpy array of LiDAR points in the bbox
     
     Returns:
     - The density of points (points per square meter) inside the bounding box
@@ -86,7 +119,7 @@ def calculate_frame_stats(bboxes: list[RectangleData], points: np.ndarray) -> di
     
     Parameters:
     - bboxes: List of bounding boxes (RectangleData objects)
-    - points: A nx3 numpy array consisting of LiDAR points in the frame
+    - points: A nx2 numpy array consisting of LiDAR points in the frame
     
     Returns:
     - A dictionary containing statistics for area, aspect ratio, and point density
