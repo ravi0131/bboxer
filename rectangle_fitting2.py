@@ -195,6 +195,8 @@ class RectangleData():
         self.length = 0
         self.width = 0
         self.centroid = (0,0)
+        
+        self.calculated_points_flag = False
 
     import matplotlib.axes as mpl_axes
     def plot(self, ax: mpl_axes):
@@ -205,7 +207,8 @@ class RectangleData():
         ax : matplotlib.axes.Axes
             The axes on which to plot the rectangle.
         """
-        self.calc_rect_contour()
+        if self.calculated_points_flag == False:
+            self.calc_rect_contour()
         #ax.scatter(self.centroid[0], self.centroid[1], color='blue', label="Centroid")  #to see centroids
         ax.plot(self.rect_c_x, self.rect_c_y, "-r")  # Plotting on the provided Axes
         # ax.text(self.centroid[0], self.centroid[1], f"l={self.length:.2f}, w={self.width:.2f}, θ={self.orientation:.2f}",
@@ -213,11 +216,13 @@ class RectangleData():
 
 
     def calc_rect_contour(self):
+        self.calculated_points_flag = True
         self.rect_c_x[0], self.rect_c_y[0] = self.calc_cross_point(self.a[0:2], self.b[0:2], self.c[0:2])
         self.rect_c_x[1], self.rect_c_y[1] = self.calc_cross_point(self.a[1:3], self.b[1:3], self.c[1:3])
         self.rect_c_x[2], self.rect_c_y[2] = self.calc_cross_point(self.a[2:4], self.b[2:4], self.c[2:4])
         self.rect_c_x[3], self.rect_c_y[3] = self.calc_cross_point([self.a[3], self.a[0]], [self.b[3], self.b[0]], [self.c[3], self.c[0]])
         self.rect_c_x[4], self.rect_c_y[4] = self.rect_c_x[0], self.rect_c_y[0]
+        # print(f"rect_c_x: {self.rect_c_x}, rect_c_y: {self.rect_c_y}")
 
     def calc_cross_point(self, a, b, c):
         x = (b[0] * -c[1] - b[1] * -c[0]) / (a[0] * b[1] - a[1] * b[0])
@@ -230,3 +235,41 @@ class RectangleData():
         if self.length * self.width < min_area:
             return False
         return True
+    
+    def contains(self, point):
+        """
+        Check if a given point (x, y) is inside the rectangle using a ray-casting algorithm.
+        The input `point` is expected to be a numpy array or list containing at least two elements [x, y].
+        
+        Parameters:
+        - point: A numpy array or list with at least two elements [x, y]
+        
+        Returns:
+        - True if the point is inside the rectangle, False otherwise
+        """
+        x, y = point[:2]  # Ensure only the first two elements (x, y) are unpacked
+        
+        # Rectangle corners (already computed in calc_rect_contour)
+        x_coords = self.rect_c_x[:4]
+        y_coords = self.rect_c_y[:4]
+        
+        # Check if the point is inside the polygon using the ray-casting algorithm
+        n = len(x_coords)
+        inside = False
+        
+        for i in range(n):
+            j = (i + 1) % n
+            xi, yi = x_coords[i], y_coords[i]
+            xj, yj = x_coords[j], y_coords[j]
+            
+            # Debugging print statements to check values
+            # print(f"xi: {xi}, yi: {yi}, xj: {xj}, yj: {yj}, x: {x}, y: {y}")
+            
+            # Ensure values are not None before comparison
+            if None in (xi, yi, xj, yj, x, y):
+                raise ValueError(f"One or more values are None: xi={xi}, yi={yi}, xj={xj}, yj={yj}, x={x}, y={y}")
+            
+            if ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi):
+                inside = not inside
+        
+        return inside
