@@ -1,0 +1,1 @@
+This repository contains the core code for estimating bounding boxes for lidar scans (BEV)
