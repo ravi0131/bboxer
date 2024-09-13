@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-from rectangle_fitting2 import LShapeFitting
+from .rectangle_fitting2 import LShapeFitting
 import matplotlib.axes as mpl_axes
-
 from .utils import *
+
 class Bboxer:
     def __init__(self, z_threshold=2.0):
         self.z_threshold = z_threshold
@@ -22,15 +22,15 @@ class Bboxer:
         self.points = points
         self.points_xy = points[:, :2]  # Keep only the x and y coordinates
 
-    def cluster(self, visualize=False):
+    def cluster(self, ax: mpl_axes= None, visualize=False):
         """
         Perform DBSCAN clustering on the non-ground points.
         Args:
+        - ax(optional): Matplotlib axes for plotting. If not passed, will automatically create one
         - visualize(optional): A boolean flag to visualize the clustered points 
         """
         #xy_points = non_ground[:, :2]  # Assuming non_ground is an Nx3 array
         xy_points = self.points_xy
-        
         # Perform DBSCAN clustering on 2D points
         eps = 0.4
         min_samples = 8
@@ -40,7 +40,10 @@ class Bboxer:
         self.clustered_points = xy_points
         self.clustered_labels = labels
         if visualize:
-            clustered_points_viz(xy_points, labels)
+            if ax is None:
+                clustered_points_viz(xy_points, labels)
+            if ax is not None:
+                clustered_points_viz(clustered_points=xy_points, clustered_labels=labels, ax=ax)
 
     def estimate_bboxes(self, ax: mpl_axes.Axes = None, plot=False):
         """
@@ -81,6 +84,7 @@ class Bboxer:
             ax.set_xlabel('X')
             ax.set_ylabel('Y')
             ax.set_title('L-Shape Fitting on Clusters')
+            plot_bev_point_cloud(ax, self.points_xy)
     
     def estimate_bboxes2(self, ax: mpl_axes.Axes = None, z_threshold=2.0, plot=False):
         """

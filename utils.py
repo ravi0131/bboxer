@@ -2,38 +2,42 @@ import matplotlib.axes as mpl_axes
 import numpy as np
 from .rectangle_fitting2 import RectangleData
 
-def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndarray):
+def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndarray, ax: mpl_axes.Axes = None):
     """
     Visualize the clustered points in 2D space.
     Args:
     - clustered_points: A nx2 numpy array of clustered points
     - clustered_labels: A nx1 numpy array of cluster labels for each point
+    - ax: Matplotlib Axes object to plot on (optional)
     """
+    import matplotlib.pyplot as plt
     # Create a colormap instance
     cmap = plt.get_cmap("tab20")  # Use 'tab20' for more colors
     unique_labels = np.unique(clustered_labels)
     colors = [cmap(i / len(unique_labels)) for i in range(len(unique_labels))]
 
-    # Visualize the 2D clusters
-    plt.figure(figsize=(10, 8))
+    # Use provided axes or create new ones
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 8))
     
+    # Visualize the 2D clusters
     for label, color in zip(unique_labels, colors):
         if label == -1:
             # Noise points
             color = [0, 0, 0, 1]  # Black color for noise
         mask = (clustered_labels == label)
-        plt.scatter(clustered_points[mask, 0], clustered_points[mask, 1], color=color, label=f'Cluster {label}')
+        ax.scatter(clustered_points[mask, 0], clustered_points[mask, 1], color=color, label=f'Cluster {label}', s=10)
 
-    plt.title('2D DBSCAN Clustering')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    #plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))  # Move legend outside the plot
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)  # Add more columns as needed
+    ax.set_title('2D DBSCAN Clustering')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    # Adjust legend position and appearance as needed
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=2)
+    ax.set_aspect('equal')
+    # Remove tight_layout and figure adjustments
+    # plt.tight_layout()  # Not needed when using ax
+    # Do not create new figures or call plt.show() here
 
-    plt.tight_layout()  # Adjust layout to prevent overlap
-    plt.figure(figsize=(12, 8))
-
-    plt.show()
 
 def plot_bev_point_cloud(ax: mpl_axes.Axes, clustered_points: np.ndarray):
     # Plot the BEV point cloud
