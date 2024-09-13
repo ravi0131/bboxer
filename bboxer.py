@@ -13,6 +13,7 @@ class Bboxer:
         self.points = None
         self.clustered_points = None
         self.clustered_labels = None
+        self.rects = None
         
     def initialize(self, points: np.ndarray):
         """
@@ -73,7 +74,7 @@ class Bboxer:
 
             # Perform L-Shape fitting on the cluster points
             rects, idsets = lshape_fitting.fitting(cluster_points_x, cluster_points_y)
-
+            self.rects = rects
             # Draw the rectangles on the provided axis
             if plot:
                 for rect in rects:
@@ -133,5 +134,5 @@ class Bboxer:
             # Step 4: Plot the filtered bounding boxes
             for rect in filtered_rects:
                 rect.plot(ax)  # Draw the filtered bounding boxes on the plot
-
+        self.rects = filtered_rects
         return filtered_rects
