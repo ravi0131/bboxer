@@ -1,4 +1,4 @@
-# BBoxer: A bounding box estimator
+# BBoxer: Your friendly neighbourhood bounding box estimator
 
 ### Files
 - rectangle_fitting1 => orignal code
