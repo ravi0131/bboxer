@@ -66,7 +66,9 @@ def BEV_visualization(points: np.ndarray):
     plt.ylabel('Y')
     plt.show()
 
-def filter_bboxes_by_zscore(bboxes: list[RectangleData], points: np.ndarray, frame_stats, z_threshold=2.0) -> list[RectangleData]:
+from typing import List
+
+def filter_bboxes_by_zscore(bboxes: list[RectangleData], points: np.ndarray, frame_stats, z_threshold=2.0) -> List[RectangleData]:
     """
     Filter bounding boxes based on Z-score for area, aspect ratio, and point density.
     
