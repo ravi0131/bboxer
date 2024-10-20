@@ -1,6 +1,7 @@
 import matplotlib.axes as mpl_axes
 import numpy as np
 from .rectangle_fitting2 import RectangleData
+from typing import List, Dict
 
 def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndarray, ax: mpl_axes.Axes = None):
     """
@@ -66,9 +67,9 @@ def BEV_visualization(points: np.ndarray):
     plt.ylabel('Y')
     plt.show()
 
-from typing import List
 
-def filter_bboxes_by_zscore(bboxes: list[RectangleData], points: np.ndarray, frame_stats, z_threshold=2.0) -> List[RectangleData]:
+
+def filter_bboxes_by_zscore(bboxes: List[RectangleData], points: np.ndarray, frame_stats, z_threshold=2.0) -> List[RectangleData]:
     """
     Filter bounding boxes based on Z-score for area, aspect ratio, and point density.
     
@@ -99,7 +100,7 @@ def filter_bboxes_by_zscore(bboxes: list[RectangleData], points: np.ndarray, fra
     
     return filtered_bboxes
 
-def calculate_point_density(bbox: list[RectangleData], points: np.ndarray) -> float:
+def calculate_point_density(bbox: List[RectangleData], points: np.ndarray) -> float:
     """
     Calculate the point density inside a bounding box.
     
@@ -119,7 +120,7 @@ def calculate_point_density(bbox: list[RectangleData], points: np.ndarray) -> fl
     
     return density
 
-def calculate_frame_stats(bboxes: list[RectangleData], points: np.ndarray) -> dict[str, float]:
+def calculate_frame_stats(bboxes: List[RectangleData], points: np.ndarray) -> Dict[str, float]:
     """
     Calculate basic statistics (mean, std) for bounding boxes in a frame.
     
