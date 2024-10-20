@@ -2,6 +2,8 @@ import matplotlib.axes as mpl_axes
 import numpy as np
 from .rectangle_fitting2 import RectangleData
 from typing import List, Dict
+import matplotlib.pyplot as plt
+
 
 def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndarray, ax: mpl_axes.Axes = None):
     """
@@ -39,110 +41,121 @@ def clustered_points_viz(clustered_points: np.ndarray, clustered_labels: np.ndar
     # plt.tight_layout()  # Not needed when using ax
     # Do not create new figures or call plt.show() here
 
-
-def plot_bev_point_cloud(ax: mpl_axes.Axes, clustered_points: np.ndarray):
-    # Plot the BEV point cloud
-    ax.scatter(clustered_points[:, 0], clustered_points[:, 1], s=1, c='gray', label='Point Cloud')
-    ax.legend()
+def visualize_clusters_with_bboxes(clustered_points, clustered_labels, rects):
+    """
+    Visualize clusters and their corresponding bounding boxes without showing the legend or angles.
     
+    Args:
+        clustered_points (np.ndarray): N x 2 array of (x, y) points.
+        clustered_labels (np.ndarray): N-length array of cluster labels for the points.
+        rects (List[Dict]): List of dictionaries containing bounding boxes, angles, and areas for each cluster.
+    """
+    # Create a color map for clusters
+    unique_labels = set(clustered_labels)
+    colors = plt.cm.get_cmap("tab10", len(unique_labels))
 
-import open3d as o3d
-import matplotlib.pyplot as plt
-def BEV_visualization(points: np.ndarray):
-    # Project to XY plane (ignore Z)
-    bev_points = points[:, :2]  # Just taking the x and y coordinates
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10, 10))
 
-    # Optionally, scale or color points based on their Z values (elevation)
-    z_values = points[:, 2]
-    colors = plt.cm.viridis((z_values - z_values.min()) / (z_values.max() - z_values.min()))
+    # Plot each cluster
+    for label in unique_labels:
+        if label == -1:
+            # Optionally skip noise points if using DBSCAN
+            continue
 
-    # Plotting
-    plt.figure(figsize=(10, 10))
-    plt.scatter(bev_points[:, 0], bev_points[:, 1], c=colors, s=0.1, cmap='viridis')
-    plt.colorbar(label='Elevation (Z)')
-    plt.axis('equal')
+        # Select points for this cluster
+        cluster_points = clustered_points[clustered_labels == label]
+
+        # Plot the points of the cluster (using same color but without labels)
+        ax.scatter(cluster_points[:, 0], cluster_points[:, 1], s=10, color=colors(label))
+
+    # Plot bounding boxes
+    for rect in rects:
+        bbox = rect["bbox"]
+
+        # Create a polygon from the bounding box points
+        polygon = plt.Polygon(bbox, fill=None, edgecolor='r', linewidth=2)
+        ax.add_patch(polygon)
+
+    # Add labels and remove legend
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_title('Clusters and Bounding Boxes')
     plt.grid(True)
-    plt.title('2D Bird\'s Eye View (BEV) of Point Cloud')
-    plt.xlabel('X')
-    plt.ylabel('Y')
     plt.show()
-
-
-
-def filter_bboxes_by_zscore(bboxes: List[RectangleData], points: np.ndarray, frame_stats, z_threshold=2.0) -> List[RectangleData]:
-    """
-    Filter bounding boxes based on Z-score for area, aspect ratio, and point density.
     
-    Parameters:
-    - bboxes: List of bounding boxes in the frame
-    - points: A nx2 numpy array of LiDAR points in the frame
-    - frame_stats: Statistics calculated from the frame (mean, std dev of area, aspect ratio, density)
-    - z_threshold: Z-score threshold for filtering (default is 2.0, which keeps boxes within 2 std devs)
+def get_bbox_corners(box_center, box_length, box_width, ry):
+    """
+    Calculate the 4 corners of the bounding box based on the center, length, width, and rotation angle.
+    
+    Args:
+        box_center (np.ndarray): (x, y) coordinates of the box center.
+        box_length (float): Length of the box.
+        box_width (float): Width of the box.
+        ry (float): Rotation angle in radians.
     
     Returns:
-    - List of filtered bounding boxes
+        np.ndarray: 4x2 array representing the coordinates of the 4 corners of the bounding box.
     """
-    filtered_bboxes = []
+    # Rotation matrix
+    rotation_matrix = np.array([[np.cos(ry), -np.sin(ry)], 
+                                [np.sin(ry), np.cos(ry)]])
     
-    for bbox in bboxes:
-        area = bbox.length * bbox.width
-        aspect_ratio = max(bbox.length / bbox.width, bbox.width / bbox.length)
-        density = calculate_point_density(bbox, points)
-        
-        # Z-scores for each property
-        area_z = (area - frame_stats['area_mean']) / frame_stats['area_std']
-        aspect_ratio_z = (aspect_ratio - frame_stats['aspect_ratio_mean']) / frame_stats['aspect_ratio_std']
-        density_z = (density - frame_stats['density_mean']) / frame_stats['density_std']
-        
-        # Check if the Z-scores are within the acceptable range
-        if abs(area_z) < z_threshold and abs(aspect_ratio_z) < z_threshold and abs(density_z) < z_threshold:
-            filtered_bboxes.append(bbox)
+    # Half-dimensions
+    half_length = box_length / 2
+    half_width = box_width / 2
     
-    return filtered_bboxes
+    # Define the four corners relative to the center
+    corners = np.array([[half_length, half_width],
+                        [-half_length, half_width],
+                        [-half_length, -half_width],
+                        [half_length, -half_width]])
+    
+    # Rotate the corners and translate them to the box center
+    rotated_corners = np.dot(corners, rotation_matrix.T) + box_center
+    
+    return rotated_corners
 
-def calculate_point_density(bbox: List[RectangleData], points: np.ndarray) -> float:
+def visualize_bboxes_for_modest_fitting(clustered_points, clustered_labels, rects):
     """
-    Calculate the point density inside a bounding box.
+    Visualize clusters and their corresponding bounding boxes without showing the legend or angles.
     
-    Parameters:
-    - bbox: The bounding box object (RectangleData)
-    - points: A nx2 numpy array of LiDAR points in the bbox
-    
-    Returns:
-    - The density of points (points per square meter) inside the bounding box
+    Args:
+        clustered_points (np.ndarray): N x 2 array of (x, y) points.
+        clustered_labels (np.ndarray): N-length array of cluster labels for the points.
+        rects (List[Dict]): List of dictionaries containing box center, length, width, and ry for each cluster.
     """
-    # Filter points that fall inside the bounding box
-    inside_points = [p for p in points if bbox.contains(p)]
-    
-    # Calculate density: number of points per square meter
-    area = bbox.length * bbox.width
-    density = len(inside_points) / area if area > 0 else 0
-    
-    return density
+    # Create a color map for clusters
+    unique_labels = set(clustered_labels)
+    colors = plt.cm.get_cmap("tab10", len(unique_labels))
 
-def calculate_frame_stats(bboxes: List[RectangleData], points: np.ndarray) -> Dict[str, float]:
-    """
-    Calculate basic statistics (mean, std) for bounding boxes in a frame.
-    
-    Parameters:
-    - bboxes: List of bounding boxes (RectangleData objects)
-    - points: A nx2 numpy array consisting of LiDAR points in the frame
-    
-    Returns:
-    - A dictionary containing statistics for area, aspect ratio, and point density
-    """
-    areas = np.array([bbox.length * bbox.width for bbox in bboxes])
-    aspect_ratios = np.array([max(bbox.length / bbox.width, bbox.width / bbox.length) for bbox in bboxes])
-    densities = np.array([calculate_point_density(bbox, points) for bbox in bboxes])
-    
-    # Calculate mean and standard deviation for each property
-    frame_stats = {
-        'area_mean': np.mean(areas),
-        'area_std': np.std(areas),
-        'aspect_ratio_mean': np.mean(aspect_ratios),
-        'aspect_ratio_std': np.std(aspect_ratios),
-        'density_mean': np.mean(densities),
-        'density_std': np.std(densities)
-    }
-    
-    return frame_stats
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    # Plot each cluster
+    for label in unique_labels:
+        if label == -1:
+            # Optionally skip noise points if using DBSCAN
+            continue
+
+        # Select points for this cluster
+        cluster_points = clustered_points[clustered_labels == label]
+
+        # Plot the points of the cluster (using same color but without labels)
+        ax.scatter(cluster_points[:, 0], cluster_points[:, 1], s=10, color=colors(label))
+
+    # Plot bounding boxes
+    for rect in rects:
+        # Get bounding box corners
+        bbox_corners = get_bbox_corners(rect["box_center"], rect["box_length"], rect["box_width"], rect["ry"])
+
+        # Create a polygon from the bounding box points
+        polygon = plt.Polygon(bbox_corners, fill=None, edgecolor='r', linewidth=2)
+        ax.add_patch(polygon)
+
+    # Add labels and remove legend
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_title('Clusters and Bounding Boxes')
+    plt.grid(True)
+    plt.show()
