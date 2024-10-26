@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 import matplotlib.axes as mpl_axes
 from .utils import *
-import rectangle_fitting_liso as rfl
+from  .rectangle_fitting_liso import fit_2d_box_modest, minimum_bounding_rectangle
 class Bboxer:
     def __init__(self):
         self.clustered_points = None
@@ -53,7 +53,7 @@ class Bboxer:
             cluster_points = clustered_points[clustered_labels == label]
 
             # Apply the bounding box estimation
-            bbox, angle, area = rfl.minimum_bounding_rectangle(cluster_points)
+            bbox, angle, area = minimum_bounding_rectangle(cluster_points)
 
             # Store the result
             rects.append({
@@ -90,7 +90,7 @@ class Bboxer:
             cluster_points_3d = np.hstack((cluster_points, np.zeros((cluster_points.shape[0], 1))))
 
             # Apply the bounding box estimation
-            box_center, box_length, box_width, ry = rfl.fit_2d_box_modest(cluster_points_3d, fit_method=fit_method)
+            box_center, box_length, box_width, ry = fit_2d_box_modest(cluster_points_3d, fit_method=fit_method)
 
             # Create the bounding box (center and dimensions)
             rects.append({
